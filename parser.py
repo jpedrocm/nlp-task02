@@ -45,15 +45,24 @@ def normalize_and_transform_rules(rules):
 	grammar = {}
 	for (left_side, right_sides_list) in rules.iteritems():
 		total_instances = float(sum(right_sides_list.values()))
+
 		for (right_side, num_of_instances) in right_sides_list.iteritems():
-			if right_side not in grammar:
-				grammar[right_side] = {left_side: (num_of_instances/total_instances)}
-			else:
-				if left_side not in grammar[right_side]:
-					grammar[right_side][left_side] = (num_of_instances/total_instances)
-				else:
-					print "ERROR"
+			probability = num_of_instances / total_instances
+			
+			grammar = add_rule_to_grammar(grammar, left_side, right_side, probability)
+
 	return grammar
+
+def add_rule_to_grammar(cur_grammar, left_side, right_side, probability):
+	if right_side not in cur_grammar:
+		cur_grammar[right_side] = {left_side: probability}
+	else:
+		if left_side not in cur_grammar[right_side]:
+			cur_grammar[right_side][left_side] = probability
+		else:
+			raise NameError("GRAMMAR ERROR")
+
+	return cur_grammar
 
 def create_pcfg(trees):
 	raw_rules = extract_rules(trees)
