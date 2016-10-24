@@ -88,7 +88,19 @@ def calculate_tagging_accuracy(candidate_tree, gold_tree):
 	return tagging_accuracy
 
 def extract_brackets(tree):
-	return []
+	brackets = []
+
+	tree_leaves = tree.leaves()
+	for subtree in tree.subtrees(lambda t: t.height() > 2):
+		subtree_leaves = subtree.leaves()
+		last_subtree_index = len(subtree_leaves)-1
+		for i in range(0, len(tree_leaves)):
+			if subtree_leaves[0]==tree_leaves[i] and subtree_leaves[last_subtree_index]==tree_leaves[i+last_subtree_index]:
+				start_index = i
+				end_index = start_index + last_subtree_index
+				brackets.append((subtree.label(), start_index, end_index))
+				break
+	return brackets
 
 def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	candidate_brackets = extract_brackets(candidate_tree)
@@ -122,6 +134,9 @@ def print_metrics(parser_metrics):
 	print "Tagging accuracy: " + str(parser_metrics[3])
 
 def cky(tree):
+	return build_candidate_tree()
+
+def build_candidate_tree():
 	return 0
 
 def main():
@@ -136,5 +151,3 @@ def main():
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
 
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
-
-main()
