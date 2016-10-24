@@ -69,13 +69,39 @@ def create_pcfg(trees):
 	grammar = normalize_and_transform_rules(raw_rules)
 	return grammar
 
-def calculate_metric_of_sentence(labeled, predicted):
-	num_of_same_label = len(filter(lambda x: x in labeled, predicted))
+def extract_word_pos_tags(tree):
+	tags = []
+	word_tag_tuples = tree.pos()
+	tags = map(lambda duple: duple[1], word_tag_tuples)
+	return tags
 
-	precision = num_of_same_label / float(len(predicted))
-	recall = num_of_same_label / float(len(labeled))
+def calculate_tagging_accuracy(candidate_tree, gold_tree):
+	candidate_tags = extract_word_pos_tags(candidate_tree)
+	gold_tags = extract_word_pos_tags(gold_tree)
+
+	num_of_tags = len(gold_tags)
+
+	num_of_equal_tags = len(filter(lambda v: v==True, [candidate_tags[i]==gold_tags[i] for i in range(0,num_of_tags)]))
+
+	tagging_accuracy = num_of_equal_tags / float(num_of_tags)
+
+	return tagging_accuracy
+
+def extract_brackets(tree):
+	return []
+
+def calculate_metric_of_sentence(candidate_tree, gold_tree):
+	candidate_brackets = extract_brackets(candidate_tree)
+	gold_brackets = extract_brackets(gold_tree)
+
+	num_of_equal_brackets = len([bracket in gold_brackets for bracket in candidate_brackets])
+
+	precision = num_of_equal_brackets / float(len(candidate_brackets))
+	recall = num_of_equal_brackets / float(len(gold_brackets))
+
 	f1 = precision / recall
-	tagging_accuracy = 0 ############# TODO
+	tagging_accuracy = calculate_tagging_accuracy(candidate_tree, gold_tree)
+
 	return [precision, recall, f1, tagging_accuracy]
 
 def calculate_parser_metrics(list_of_sentence_metrics):
