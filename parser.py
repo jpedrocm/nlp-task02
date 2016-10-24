@@ -106,7 +106,7 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 
 def calculate_parser_metrics(list_of_sentence_metrics):
 	parser_metrics_sum = {}
-	num_of_sentences = len(List_of_sentence_metrics)
+	num_of_sentences = len(list_of_sentence_metrics)
 
 	parser_metrics_sum = [sum(x) for x in zip(*list_of_sentence_metrics)]
 
@@ -121,9 +121,20 @@ def print_metrics(parser_metrics):
 	print "F-measure: " + str(parser_metrics[2])
 	print "Tagging accuracy: " + str(parser_metrics[3])
 
+def cky(tree):
+	return 0
+
 def main():
 	train_set, test_set = create_sets()
 
 	pcfg = create_pcfg(train_set)
+
+	list_of_sentence_metrics = []
+
+	for gold_tree in test_set:
+		candidate_tree = cky(gold_tree)
+		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
+
+	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
 
 main()
