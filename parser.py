@@ -1,5 +1,5 @@
 import random
-from nltk import induce_pcfg, Nonterminal
+from nltk import Nonterminal, Tree
 from nltk.corpus import treebank
 
 def create_sets():
@@ -8,7 +8,7 @@ def create_sets():
 
 	raw_full_set = treebank.parsed_sents()
 
-	full_set = map(lambda tree: binarize_tree(tree), raw_full_set)
+	full_set = map(lambda tree: transform_tree(tree), raw_full_set)
 
 	full_set_size = len(full_set)
 	full_set_indexes = range(full_set_size)
@@ -20,10 +20,11 @@ def create_sets():
 
 	return (train_set, test_set)
 
-def binarize_tree(tree):
-	tree.collapse_unary(collapsePOS = True, collapseRoot = True)
-	tree.chomsky_normal_form()
-	return tree
+def transform_tree(tree):
+	new_tree = Tree.fromstring("(NEW_ROOT" + str(tree) + ")")
+	new_tree.collapse_unary()
+	new_tree.chomsky_normal_form()
+	return new_tree
 
 def extract_rules(trees):
 	rules = {}
@@ -39,6 +40,7 @@ def extract_rules(trees):
 					rules[left_side][right_side] = 1
 				else:
 					rules[left_side][right_side] += 1
+	rules[Nonterminal("NN")] = {("UNK",): 1}
 	return rules
 
 def normalize_and_transform_rules(rules):
@@ -60,7 +62,7 @@ def add_rule_to_grammar(cur_grammar, left_side, right_side, probability):
 		if left_side not in cur_grammar[right_side]:
 			cur_grammar[right_side][left_side] = probability
 		else:
-			raise NameError("GRAMMAR ERROR")
+			raise NameError("GRAMMAR CONSTRUCTION ERROR")
 
 	return cur_grammar
 
@@ -69,15 +71,15 @@ def create_pcfg(trees):
 	grammar = normalize_and_transform_rules(raw_rules)
 	return grammar
 
-def extract_word_pos_tags(tree):
+def extract_words_pos_tags(tree):
 	tags = []
 	word_tag_tuples = tree.pos()
 	tags = map(lambda duple: duple[1], word_tag_tuples)
 	return tags
 
 def calculate_tagging_accuracy(candidate_tree, gold_tree):
-	candidate_tags = extract_word_pos_tags(candidate_tree)
-	gold_tags = extract_word_pos_tags(gold_tree)
+	candidate_tags = extract_words_pos_tags(candidate_tree)
+	gold_tags = extract_words_pos_tags(gold_tree)
 
 	num_of_tags = len(gold_tags)
 
@@ -151,3 +153,5 @@ def main():
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
 
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
+
+main()
