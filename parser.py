@@ -1,6 +1,7 @@
 import random
 from nltk import Nonterminal, Tree
 from nltk.corpus import treebank
+from nltk.tag.mapping import map_tag
 
 def create_sets():
 	train_set = []
@@ -24,6 +25,8 @@ def transform_tree(tree):
 	new_tree = Tree.fromstring("(NEW_ROOT" + str(tree) + ")")
 	new_tree.collapse_unary()
 	new_tree.chomsky_normal_form()
+	for leaf in new_tree.subtrees(lambda t: t.height()==2):
+		leaf.set_label(map_tag('en-ptb', 'universal', leaf.label()))
 	return new_tree
 
 def extract_rules(trees):
@@ -40,7 +43,7 @@ def extract_rules(trees):
 					rules[left_side][right_side] = 1
 				else:
 					rules[left_side][right_side] += 1
-	rules[Nonterminal("NN")] = {("UNK",): 1}
+	rules[Nonterminal("NOUN")] = {("UNK",): 1}
 	return rules
 
 def normalize_and_transform_rules(rules):
