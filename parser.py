@@ -40,7 +40,7 @@ def extract_rules(trees):
 					rules[left_side][right_side] = 1
 				else:
 					rules[left_side][right_side] += 1
-	rules[Nonterminal("NN")] = {("UNK",): 1}
+	rules[No;nterminal("NN")] = {("UNK",): 1}
 	return rules
 
 def normalize_and_transform_rules(rules):
@@ -135,7 +135,13 @@ def print_metrics(parser_metrics):
 	print "F-measure: " + str(parser_metrics[2])
 	print "Tagging accuracy: " + str(parser_metrics[3])
 
-def cky(tree):
+def cky(words, pcfg, nonterms):
+	score = [len(words)+1][len(words)+1][len(nonterms)]
+	back = [len(words)+1][len(words)+1][len(nonterms)]
+	for i in range(len(words)):
+		for a in nonterms:
+
+
 	return build_candidate_tree()
 
 def build_candidate_tree():
@@ -148,10 +154,10 @@ def main():
 
 	list_of_sentence_metrics = []
 
-	for gold_tree in test_set:
+"""	for gold_tree in test_set:
 		candidate_tree = cky(gold_tree)
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
 
-	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
-
+	#print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
+"""
 main()
