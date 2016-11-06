@@ -138,11 +138,48 @@ def print_metrics(parser_metrics):
 	print "F-measure: " + str(parser_metrics[2])
 	print "Tagging accuracy: " + str(parser_metrics[3])
 
-def cky(tree):
+def cky(words, pcfg):
+	score = [[{} for i in range(len(words)+1)] for i in range(len(words)+1)]
+	back = [[{} for i in range(len(words)+1)] for i in range(len(words)+1)]
+	i = 0
+
+	keys = pcfg.keys()
+	for w in words:
+		tup = (w,)
+		if(tup in keys):
+			for a in list(pcfg[tup].keys()):
+				score[i][i+1][a] = pcfg[tup][a]
+		else:
+			#Unarias Nao Terminais
+			added = True
+			while(added):
+				added = False
+			bs = score[i][i+1].keys()
+			for b in bs:
+				tup_b = (b,)
+				if((tup_b in pcfg) and score[i][i+1][b]>0):
+					for a in list(pcfg[tup_b].keys()):
+						if((a not in score[i][i+1])):
+							score[i][i+1][a] = 0
+						prob = pcfg[tup_b][a]*score[i][i+1][b]
+						if(score[i][i+1][a]<prob):
+							score[i][i+1][a] = prob
+							back[i][i+1][a] = b
+							added = True
+
+		i = i+1
+	print score
 	return build_candidate_tree()
 
 def build_candidate_tree():
 	return 0
+
+def process_pcfg(pcfg):
+	transform_pcfg = {}
+	for key in pcfg.keys():
+		transform_pcfg[key[0]] = pcfg[key]
+
+	return transform_pcfg
 
 def main():
 	train_set, test_set = create_sets()
@@ -151,10 +188,14 @@ def main():
 
 	list_of_sentence_metrics = []
 
+	i = 0
 	for gold_tree in test_set:
-		candidate_tree = cky(gold_tree)
-		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
+		if(i == 0):
+			words = gold_tree.leaves()
+			candidate_tree = cky(words,pcfg)
+			i = i+1
+		#list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))"""
 
-	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
+	#print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
 
 main()
