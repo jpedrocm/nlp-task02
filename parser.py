@@ -173,44 +173,56 @@ def cky(words, pcfg):
 							added = True
 		
 		i = i+1
-
-	for span in range(2,len(words)):
-		for begin in range(len(words)-span):
+	for span in range(2,len(words)+1):
+		for begin in range(len(words)-span+1):
 			end = begin + span
-			for split in  range(begin+1, end-1):
-				bs = score[begin][split].keys();
-				cs = score[split][end].keys();
+
+			for split in range(begin+1,end):
+				bs = score[begin][split].keys()
+				cs = score[split][end].keys()
 
 				for b in bs:
 					for c in cs:
 						tup = (b,c)
-						for a in list(pcfg[tup].keys()):
-							if((a not in score[begin][end])):
-								score[begin][end][a] = 0
+						if(tup in pcfg):
+							for a in list(pcfg[tup].keys()):
+								if((a not in score[begin][end])):
+									score[begin][end][a] = 0
 
-							prob = 	score[begin][split][b]*score[split][end][c]*pcfg[tup][a]
-							if(prob>score[begin][end][a]):
-								score[begin][end][a] = prob
-								back[begin][end][a] = tup
+								prob = 	score[begin][split][b]*score[split][end][c]*pcfg[tup][a]
+								if(prob>score[begin][end][a]):
+									score[begin][end][a] = prob
+									back[begin][end][a] = (split,b,c)
 
-							added = True
+								added = True
 
-							while(added):
-								added = False
-								bsu = score[begin][end].keys()
-								for bu in bsu:
-									tup_bu = (bu,)
-									if((tup_bu in pcfg) and score[begin][end][bu]>0):
-										for au in list(pcfg[tup_bu].keys()):
-											if((au not in score[begin][end])):
-												score[begin][end][au] = 0
-											prob = pcfg[tup_bu][au]*score[begin][end][bu]
-											if(score[begin][end][au]<prob):
-												score[begin][end][au] = prob
-												back[begin][end][au] = bu
-												added = True								
-
+								while(added):
+									added = False
+									bsu = score[begin][end].keys()
+									for bu in bsu:
+										tup_bu = (bu,)
+										if((tup_bu in pcfg) and score[begin][end][bu]>0):
+											for au in list(pcfg[tup_bu].keys()):
+												if((au not in score[begin][end])):
+													score[begin][end][au] = 0
+												prob = pcfg[tup_bu][au]*score[begin][end][bu]
+												if(score[begin][end][au]<prob):
+													score[begin][end][au] = prob
+													back[begin][end][au] = bu
+													added = True								
+	
 	return build_candidate_tree(score, back)
+
+def print_score(score):
+	for i in range(len(score)):
+		row = ""
+		for j in range(len(score[0])):
+			if(score[i][j] != {}):
+				row = row+"(X)"
+			else:
+				row = row+"( )"
+
+		print row	
 
 def build_candidate_tree(score, back):
 	return 0
