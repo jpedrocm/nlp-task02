@@ -150,10 +150,15 @@ def cky(words, pcfg):
 			for a in list(pcfg[tup].keys()):
 				score[i][i+1][a] = pcfg[tup][a]
 		else:
-			#Unarias Nao Terminais
-			added = True
-			while(added):
-				added = False
+			tup = ("UNK",)
+			for a in list(pcfg[tup].keys()):
+				score[i][i+1][a] = pcfg[tup][a]
+
+		#Unarias Nao Terminais
+		added = True
+
+		while(added):
+			added = False
 			bs = score[i][i+1].keys()
 			for b in bs:
 				tup_b = (b,)
@@ -166,12 +171,48 @@ def cky(words, pcfg):
 							score[i][i+1][a] = prob
 							back[i][i+1][a] = b
 							added = True
-
+		
 		i = i+1
-	print score
-	return build_candidate_tree()
 
-def build_candidate_tree():
+	for span in range(2,len(words)):
+		for begin in range(len(words)-span):
+			end = begin + span
+			for split in  range(begin+1, end-1):
+				bs = score[begin][split].keys();
+				cs = score[split][end].keys();
+
+				for b in bs:
+					for c in cs:
+						tup = (b,c)
+						for a in list(pcfg[tup].keys()):
+							if((a not in score[begin][end])):
+								score[begin][end][a] = 0
+
+							prob = 	score[begin][split][b]*score[split][end][c]*pcfg[tup][a]
+							if(prob>score[begin][end][a]):
+								score[begin][end][a] = prob
+								back[begin][end][a] = tup
+
+							added = True
+
+							while(added):
+								added = False
+								bsu = score[begin][end].keys()
+								for bu in bsu:
+									tup_bu = (bu,)
+									if((tup_bu in pcfg) and score[begin][end][bu]>0):
+										for au in list(pcfg[tup_bu].keys()):
+											if((au not in score[begin][end])):
+												score[begin][end][au] = 0
+											prob = pcfg[tup_bu][au]*score[begin][end][bu]
+											if(score[begin][end][au]<prob):
+												score[begin][end][au] = prob
+												back[begin][end][au] = bu
+												added = True								
+
+	return build_candidate_tree(score, back)
+
+def build_candidate_tree(score, back):
 	return 0
 
 def process_pcfg(pcfg):
