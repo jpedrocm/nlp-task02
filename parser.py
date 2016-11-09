@@ -3,6 +3,8 @@ from nltk import Nonterminal, Tree
 from nltk.corpus import treebank
 from nltk.tag.mapping import map_tag
 
+num_of_no_trees = 0
+
 def create_sets():
 	train_set = []
 	test_set = []
@@ -116,6 +118,7 @@ def extract_brackets(tree):
 
 def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	if candidate_tree is None:
+		num_of_no_trees+=1
 		return [0.0, 0.0, 0.0, 0.0]
 	candidate_brackets = extract_brackets(candidate_tree)
 	gold_brackets = extract_brackets(gold_tree)
@@ -256,6 +259,9 @@ def main():
 
 	ii = 1
 	for gold_tree in test_set:
+		print ii
+		print ""
+		ii+=1
 		words = gold_tree.leaves()
 		print gold_tree
 		print ""
@@ -263,9 +269,9 @@ def main():
 		print candidate_tree
 		print ""
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
-		#print ii
-		#ii+=1
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
-	print (time.time()-start_time)
+	print "Total of sentences: " + str(len(test_set))
+	print "Sentences not parsed: " +str(num_of_no_trees)
+	print "Time spent: " + (time.time()-start_time)
 
 main()
