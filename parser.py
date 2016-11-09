@@ -135,7 +135,7 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	tagging_accuracy = calculate_tagging_accuracy(candidate_tree, gold_tree)
 
 	metric = [precision, recall, f1, tagging_accuracy]
-	print metric
+	
 	return metric
 
 def calculate_parser_metrics(list_of_sentence_metrics):
@@ -262,18 +262,18 @@ def main():
 	ii = 1
 	for gold_tree in test_set:
 		print ii
-		print ""
+		#print ""
 		ii+=1
 		words = gold_tree.leaves()
-		print gold_tree
-		print ""
+		#print gold_tree
+		#print ""
 		candidate_tree = cky(words, pcfg)
-		print candidate_tree
-		print ""
+		#print candidate_tree
+		#print ""
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
 	print "Total of sentences: " + str(len(test_set))
 	print "Sentences not parsed: " +str(num_of_no_trees)
-	print "Time spent: " + (time.time()-start_time)
+	print "Time spent: " + str(time.time()-start_time)
 
 main()
