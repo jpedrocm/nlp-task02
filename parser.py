@@ -123,18 +123,19 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	precision = num_of_equal_brackets / float(len(candidate_brackets))
 	recall = num_of_equal_brackets / float(len(gold_brackets))
 
-	f1 = precision / recall
+	f1 = 2*precision*recall / (precision+recall)
 	tagging_accuracy = calculate_tagging_accuracy(candidate_tree, gold_tree)
 
-	return [precision, recall, f1, tagging_accuracy]
+	metric = [precision, recall, f1, tagging_accuracy]
+	return metric
 
 def calculate_parser_metrics(list_of_sentence_metrics):
-	parser_metrics_sum = {}
+	parser_metrics_sums = {}
 	num_of_sentences = len(list_of_sentence_metrics)
 
-	parser_metrics_sum = [sum(x) for x in zip(*list_of_sentence_metrics)]
+	parser_metrics_sums = [sum(x) for x in zip(*list_of_sentence_metrics)]
 
-	parser_metrics = map(lambda x: x/num_of_sentences)
+	parser_metrics = map(lambda x: x/num_of_sentences, parser_metrics_sums)
 
 	return parser_metrics
 
@@ -194,7 +195,7 @@ def cky(words, pcfg):
 								back[begin][end][au] = (split,bu,cu)
 								score[begin][end], back[begin][end] = create_unarias(score[begin][end], back[begin][end], pcfg)
 
-	return build_candidate_tree(score, back)
+	return build_candidate_tree(score, back, words)
 
 def create_unarias(cell, back_cell, pcfg):
 	added = True
@@ -216,24 +217,31 @@ def create_unarias(cell, back_cell, pcfg):
 						added = True
 	return cell, back_cell
 
-def print_score(score):
-	for i in range(len(score)):
-		row = ""
-		for j in range(len(score[0])):
-			if(score[i][j] != {}):
-				row = row+"(X)"
-			else:
-				row = row+"( )"
+def build_candidate_tree(score, back, words):
+	li = 0
+	ri = len(words)
+	tagi = Nonterminal("NEW_ROOT")
+	tree_string = '(NEW_ROOT ' + build_tree(back, li, ri, tagi, words, "")
+	candidate_tree = Tree.fromstring(tree_string)
+	print candidate_tree
+	return candidate_tree
 
-		print row	
+def build_tree(back, li, ri, tagi, words, cur):
+	if abs(ri-li)==1:
+		return cur + words[li] +') '
 
-def build_candidate_tree(score, back):
-	cell = score[0][len(score[0])-1]
-	keys = cell.keys()
-	if("NEW_ROOT" in keys):
-		return 1;
+	backT = back[li][ri][tagi]
+	if isinstance(backT, Nonterminal):
+		tagi = backT
+		cur += '\n(' + str(tagi) + ' '
+		cur = build_tree(back, li, ri, tagi, words, cur)
 	else:
-		return 0
+		split = backT[0]
+		cur+= '\n(' + str(backT[1]) + ' '
+		cur = build_tree(back, li, split, backT[1], words, cur)
+		cur += '\n(' + str(backT[2]) + ' '
+		cur = build_tree(back, split, ri, backT[2], words, cur)
+	return cur + ')'
 
 def main():
 	train_set, test_set = create_sets()
@@ -242,15 +250,12 @@ def main():
 
 	list_of_sentence_metrics = []
 
-	i = 0
 	for gold_tree in test_set:
-		if(i == 0):
-			print gold_tree
-			words = gold_tree.leaves()
-			candidate_tree = cky(words,pcfg)
-			i = i+1
-		#list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))"""
-
-	#print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
+		print gold_tree
+		words = gold_tree.leaves()
+		candidate_tree = cky(words,pcfg)
+		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
+		break
+	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
 
 main()
