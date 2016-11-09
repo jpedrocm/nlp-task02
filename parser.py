@@ -154,7 +154,8 @@ def cky(words, pcfg):
 			for a in list(pcfg[tup].keys()):
 				score[i][i+1][a] = pcfg[tup][a]
 
-		#Unarias Nao Terminais
+		score[i][i+1], back[i][i+1] = create_unarias(score[i][i+1], back[i][i+1], pcfg)		
+		"""		#Unarias Nao Terminais
 		added = True
 
 		while(added):
@@ -164,14 +165,14 @@ def cky(words, pcfg):
 				tup_b = (b,)
 				if((tup_b in pcfg) and score[i][i+1][b]>0):
 					for a in list(pcfg[tup_b].keys()):
-						if((a not in score[i][i+1])):
+						if((a not in score[i][i+1].keys())):
 							score[i][i+1][a] = 0
 						prob = pcfg[tup_b][a]*score[i][i+1][b]
 						if(score[i][i+1][a]<prob):
 							score[i][i+1][a] = prob
 							back[i][i+1][a] = b
 							added = True
-		
+		"""		
 		i = i+1
 	for span in range(2,len(words)+1):
 		for begin in range(len(words)-span+1):
@@ -181,19 +182,24 @@ def cky(words, pcfg):
 				bs = score[begin][split].keys()
 				cs = score[split][end].keys()
 
-				for b in bs:
-					for c in cs:
-						tup = (b,c)
+				print bs
+				print cs
+				
+				for bu in bs:
+					for cu in cs:
+						tup = (bu,cu)
 						if(tup in pcfg):
-							for a in list(pcfg[tup].keys()):
-								if((a not in score[begin][end])):
-									score[begin][end][a] = 0
+							for au in list(pcfg[tup].keys()):
+								if((au not in score[begin][end])):
+									score[begin][end][au] = 0
 
-								prob = 	score[begin][split][b]*score[split][end][c]*pcfg[tup][a]
-								if(prob>score[begin][end][a]):
-									score[begin][end][a] = prob
-									back[begin][end][a] = (split,b,c)
+								prob = 	score[begin][split][bu]*score[split][end][cu]*pcfg[tup][au]
+								if(prob>score[begin][end][au]):
+									score[begin][end][au] = prob
+									back[begin][end][au] = (split,bu,cu)
 
+								score[begin][end], back[begin][end] = create_unarias(score[begin][end], back[begin][end], pcfg)
+	"""
 								added = True
 
 								while(added):
@@ -202,16 +208,44 @@ def cky(words, pcfg):
 									for bu in bsu:
 										tup_bu = (bu,)
 										if((tup_bu in pcfg) and score[begin][end][bu]>0):
-											for au in list(pcfg[tup_bu].keys()):
-												if((au not in score[begin][end])):
+											for au in list(pcfg[tup_bu]):
+												if(au not in score[begin][end]):
 													score[begin][end][au] = 0
 												prob = pcfg[tup_bu][au]*score[begin][end][bu]
+													
 												if(score[begin][end][au]<prob):
 													score[begin][end][au] = prob
 													back[begin][end][au] = bu
-													added = True								
-	
+													
+								
+													added = True						
+	"""
+	print_score(score)
 	return build_candidate_tree(score, back)
+
+def create_unarias(cell, back_cell, pcfg):
+	"""added = True
+	count = 0
+	while(added):
+		added = False
+		bsu = cell.keys()
+		for bu in bsu:
+			tup_bu = (bu,)
+			if((tup_bu in pcfg) and cell[bu]>0):
+				for au in list(pcfg[tup_bu]):
+					if(au not in cell):
+						cell[au] = 0
+					prob = pcfg[tup_bu][au]*cell[bu]
+						
+					if(cell[au]<prob):
+						cell[au] = prob
+						back_cell[au] = bu		
+					
+
+						added = True
+		print count
+		count = count + 1"""
+	return cell, back_cell
 
 def print_score(score):
 	for i in range(len(score)):
@@ -225,7 +259,12 @@ def print_score(score):
 		print row	
 
 def build_candidate_tree(score, back):
-	return 0
+	cell = score[0][len(score[0])-1]
+	keys = cell.keys()
+	if("NEW_ROOT" in keys):
+		return 1;
+	else:
+		return 0
 
 def process_pcfg(pcfg):
 	transform_pcfg = {}
