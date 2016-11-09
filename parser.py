@@ -52,7 +52,8 @@ def extract_rules(trees):
 					rules[left_side][right_side] = 1
 				else:
 					rules[left_side][right_side] += 1
-	rules[Nonterminal("NOUN")] = {("UNK",): 1}
+	
+	rules[Nonterminal("NOUN")][("UNK",)] = 1
 	return rules
 
 def normalize_and_transform_rules(rules):
@@ -117,6 +118,7 @@ def extract_brackets(tree):
 	return brackets
 
 def calculate_metric_of_sentence(candidate_tree, gold_tree):
+	global num_of_no_trees
 	if candidate_tree is None:
 		num_of_no_trees+=1
 		return [0.0, 0.0, 0.0, 0.0]
