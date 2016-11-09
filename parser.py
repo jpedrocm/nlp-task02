@@ -115,6 +115,8 @@ def extract_brackets(tree):
 	return brackets
 
 def calculate_metric_of_sentence(candidate_tree, gold_tree):
+	if candidate_tree is None:
+		return [0.0, 0.0, 0.0, 0.0]
 	candidate_brackets = extract_brackets(candidate_tree)
 	gold_brackets = extract_brackets(gold_tree)
 
@@ -220,18 +222,12 @@ def create_unarias(cell, back_cell, pcfg):
 def build_candidate_tree(score, back, words):
 	li = 0
 	ri = len(words)
-	tagi = get_best_root_tag(score, li, ri)
+	tagi = Nonterminal('NEW_ROOT')
+	if tagi not in back[li][ri]:
+		return None
 	tree_string = '(' + str(tagi) + ' ' + build_tree(back, li, ri, tagi, words, "")
 	candidate_tree = Tree.fromstring(tree_string)
 	return candidate_tree
-
-def get_best_root_tag(score, li, ri):
-	best_prob = 0.0
-	best_tag = Nonterminal('NEW_ROOT')
-	for tag, cur_prob in score[ri][li].iteritems():
-		best_prob = max(cur_prob, best_prob)
-		best_tag = tag if best_prob==cur_prob else best_tag
-	return best_tag
 
 def build_tree(back, li, ri, tagi, words, cur):
 	if abs(ri-li)==1:
