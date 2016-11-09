@@ -1,4 +1,4 @@
-import random, re
+import random, time
 from nltk import Nonterminal, Tree
 from nltk.corpus import treebank
 from nltk.tag.mapping import map_tag
@@ -118,7 +118,8 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	candidate_brackets = extract_brackets(candidate_tree)
 	gold_brackets = extract_brackets(gold_tree)
 
-	num_of_equal_brackets = len([bracket in gold_brackets for bracket in candidate_brackets])
+	equal_brackets = [g_bracket for g_bracket in gold_brackets for c_bracket in candidate_brackets if g_bracket==c_bracket]
+	num_of_equal_brackets = len(equal_brackets)
 
 	precision = num_of_equal_brackets / float(len(candidate_brackets))
 	recall = num_of_equal_brackets / float(len(gold_brackets))
@@ -127,6 +128,7 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	tagging_accuracy = calculate_tagging_accuracy(candidate_tree, gold_tree)
 
 	metric = [precision, recall, f1, tagging_accuracy]
+	print metric
 	return metric
 
 def calculate_parser_metrics(list_of_sentence_metrics):
@@ -136,7 +138,6 @@ def calculate_parser_metrics(list_of_sentence_metrics):
 	parser_metrics_sums = [sum(x) for x in zip(*list_of_sentence_metrics)]
 
 	parser_metrics = map(lambda x: x/num_of_sentences, parser_metrics_sums)
-
 	return parser_metrics
 
 def print_metrics(parser_metrics):
@@ -193,8 +194,7 @@ def cky(words, pcfg):
 							if prob>score[begin][end][au]:
 								score[begin][end][au] = prob
 								back[begin][end][au] = (split,bu,cu)
-								score[begin][end], back[begin][end] = create_unarias(score[begin][end], back[begin][end], pcfg)
-
+							score[begin][end], back[begin][end] = create_unarias(score[begin][end], back[begin][end], pcfg)
 	return build_candidate_tree(score, back, words)
 
 def create_unarias(cell, back_cell, pcfg):
@@ -220,11 +220,18 @@ def create_unarias(cell, back_cell, pcfg):
 def build_candidate_tree(score, back, words):
 	li = 0
 	ri = len(words)
-	tagi = Nonterminal("NEW_ROOT")
-	tree_string = '(NEW_ROOT ' + build_tree(back, li, ri, tagi, words, "")
+	tagi = get_best_root_tag(score, li, ri)
+	tree_string = '(' + str(tagi) + ' ' + build_tree(back, li, ri, tagi, words, "")
 	candidate_tree = Tree.fromstring(tree_string)
-	print candidate_tree
 	return candidate_tree
+
+def get_best_root_tag(score, li, ri):
+	best_prob = 0.0
+	best_tag = Nonterminal('NEW_ROOT')
+	for tag, cur_prob in score[ri][li].iteritems():
+		best_prob = max(cur_prob, best_prob)
+		best_tag = tag if best_prob==cur_prob else best_tag
+	return best_tag
 
 def build_tree(back, li, ri, tagi, words, cur):
 	if abs(ri-li)==1:
@@ -244,18 +251,25 @@ def build_tree(back, li, ri, tagi, words, cur):
 	return cur + ')'
 
 def main():
+	start_time = time.time()
 	train_set, test_set = create_sets()
 
 	pcfg = create_pcfg(train_set)
 
 	list_of_sentence_metrics = []
 
+	ii = 1
 	for gold_tree in test_set:
-		print gold_tree
 		words = gold_tree.leaves()
-		candidate_tree = cky(words,pcfg)
+		print gold_tree
+		print ""
+		candidate_tree = cky(words, pcfg)
+		print candidate_tree
+		print ""
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
-		break
+		#print ii
+		#ii+=1
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
+	print (time.time()-start_time)
 
 main()
