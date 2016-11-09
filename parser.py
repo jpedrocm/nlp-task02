@@ -1,4 +1,4 @@
-import random
+import random, re
 from nltk import Nonterminal, Tree
 from nltk.corpus import treebank
 from nltk.tag.mapping import map_tag
@@ -8,18 +8,25 @@ def create_sets():
 	test_set = []
 
 	raw_full_set = treebank.parsed_sents()
+	filtered_full_set = filter_set_from_none(raw_full_set)
 
-	full_set = map(lambda tree: transform_tree(tree), raw_full_set)
+	final_set = map(lambda tree: transform_tree(tree), filtered_full_set)
 
-	full_set_size = len(full_set)
-	full_set_indexes = range(full_set_size)
-	train_set_indexes = random.sample(full_set_indexes, int(0.75*full_set_size))
-	test_set_indexes = list(set(full_set_indexes) - set(train_set_indexes))
+	final_set_size = len(final_set)
+	final_set_indexes = range(final_set_size)
+	train_set_indexes = random.sample(final_set_indexes, int(0.75*final_set_size))
+	test_set_indexes = list(set(final_set_indexes) - set(train_set_indexes))
 
-	train_set = map(lambda i: full_set[i], train_set_indexes)
-	test_set = map(lambda i: full_set[i], test_set_indexes)
+	train_set = map(lambda i: final_set[i], train_set_indexes)
+	test_set = map(lambda i: final_set[i], test_set_indexes)
 
 	return (train_set, test_set)
+
+def filter_set_from_none(full_set):
+	return filter(lambda tree: not contain_none(tree), full_set)
+
+def contain_none(tree):
+	return '-NONE-' in map(lambda (w,t): t, tree.pos())
 
 def transform_tree(tree):
 	new_tree = Tree.fromstring("(NEW_ROOT" + str(tree) + ")")
@@ -139,112 +146,74 @@ def print_metrics(parser_metrics):
 	print "Tagging accuracy: " + str(parser_metrics[3])
 
 def cky(words, pcfg):
-	score = [[{} for i in range(len(words)+1)] for i in range(len(words)+1)]
-	back = [[{} for i in range(len(words)+1)] for i in range(len(words)+1)]
+	words_size = len(words)
+
+	score = [[{} for i in range(words_size+1)] for j in range(words_size+1)]
+	back = [[{} for i in range(words_size+1)] for j in range(words_size+1)]
 	i = 0
 
 	keys = pcfg.keys()
 	for w in words:
 		tup = (w,)
-		if(tup in keys):
-			for a in list(pcfg[tup].keys()):
+		if tup in keys:
+			for a in pcfg[tup].keys():
 				score[i][i+1][a] = pcfg[tup][a]
+
+		#elif re.match('^\*.*\*|0|^\*.*-\d+', w):
+		#	a = Nonterminal('X')
+		#	score[i][i+1][a] = pcfg[tup][a]
 		else:
 			tup = ("UNK",)
-			for a in list(pcfg[tup].keys()):
+			for a in pcfg[tup].keys():
 				score[i][i+1][a] = pcfg[tup][a]
 
 		score[i][i+1], back[i][i+1] = create_unarias(score[i][i+1], back[i][i+1], pcfg)		
-		"""		#Unarias Nao Terminais
-		added = True
-
-		while(added):
-			added = False
-			bs = score[i][i+1].keys()
-			for b in bs:
-				tup_b = (b,)
-				if((tup_b in pcfg) and score[i][i+1][b]>0):
-					for a in list(pcfg[tup_b].keys()):
-						if((a not in score[i][i+1].keys())):
-							score[i][i+1][a] = 0
-						prob = pcfg[tup_b][a]*score[i][i+1][b]
-						if(score[i][i+1][a]<prob):
-							score[i][i+1][a] = prob
-							back[i][i+1][a] = b
-							added = True
-		"""		
 		i = i+1
-	for span in range(2,len(words)+1):
-		for begin in range(len(words)-span+1):
+
+	for span in range(2, words_size+1):
+		for begin in range(words_size-span+1):
 			end = begin + span
 
 			for split in range(begin+1,end):
 				bs = score[begin][split].keys()
 				cs = score[split][end].keys()
 
-				print bs
-				print cs
+				possible_duples = [(bu,cu) for bu in bs for cu in cs]
 				
-				for bu in bs:
-					for cu in cs:
-						tup = (bu,cu)
-						if(tup in pcfg):
-							for au in list(pcfg[tup].keys()):
-								if((au not in score[begin][end])):
-									score[begin][end][au] = 0
+				for tup in possible_duples:
+					if tup in pcfg:
+						bu = tup[0]
+						cu = tup[1]
+						for au in pcfg[tup].keys():
+							if au not in score[begin][end]:
+								score[begin][end][au] = 0.0
 
-								prob = 	score[begin][split][bu]*score[split][end][cu]*pcfg[tup][au]
-								if(prob>score[begin][end][au]):
-									score[begin][end][au] = prob
-									back[begin][end][au] = (split,bu,cu)
-
+							prob = score[begin][split][bu]*score[split][end][cu]*pcfg[tup][au]
+							if prob>score[begin][end][au]:
+								score[begin][end][au] = prob
+								back[begin][end][au] = (split,bu,cu)
 								score[begin][end], back[begin][end] = create_unarias(score[begin][end], back[begin][end], pcfg)
-	"""
-								added = True
 
-								while(added):
-									added = False
-									bsu = score[begin][end].keys()
-									for bu in bsu:
-										tup_bu = (bu,)
-										if((tup_bu in pcfg) and score[begin][end][bu]>0):
-											for au in list(pcfg[tup_bu]):
-												if(au not in score[begin][end]):
-													score[begin][end][au] = 0
-												prob = pcfg[tup_bu][au]*score[begin][end][bu]
-													
-												if(score[begin][end][au]<prob):
-													score[begin][end][au] = prob
-													back[begin][end][au] = bu
-													
-								
-													added = True						
-	"""
-	print_score(score)
 	return build_candidate_tree(score, back)
 
 def create_unarias(cell, back_cell, pcfg):
-	"""added = True
-	count = 0
+	added = True
 	while(added):
 		added = False
 		bsu = cell.keys()
 		for bu in bsu:
 			tup_bu = (bu,)
-			if((tup_bu in pcfg) and cell[bu]>0):
-				for au in list(pcfg[tup_bu]):
-					if(au not in cell):
+			if tup_bu in pcfg and cell[bu]>0:
+				for au in pcfg[tup_bu]:
+					if au not in cell:
 						cell[au] = 0
 					prob = pcfg[tup_bu][au]*cell[bu]
 						
-					if(cell[au]<prob):
+					if cell[au]<prob:
 						cell[au] = prob
 						back_cell[au] = bu		
 					
-
 						added = True
-		print count
-		count = count + 1"""
 	return cell, back_cell
 
 def print_score(score):
@@ -266,13 +235,6 @@ def build_candidate_tree(score, back):
 	else:
 		return 0
 
-def process_pcfg(pcfg):
-	transform_pcfg = {}
-	for key in pcfg.keys():
-		transform_pcfg[key[0]] = pcfg[key]
-
-	return transform_pcfg
-
 def main():
 	train_set, test_set = create_sets()
 
@@ -283,6 +245,7 @@ def main():
 	i = 0
 	for gold_tree in test_set:
 		if(i == 0):
+			print gold_tree
 			words = gold_tree.leaves()
 			candidate_tree = cky(words,pcfg)
 			i = i+1
