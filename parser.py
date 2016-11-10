@@ -52,7 +52,7 @@ def extract_rules(trees):
 					rules[left_side][right_side] = 1
 				else:
 					rules[left_side][right_side] += 1
-	rules[Nonterminal("NOUN")] = {("UNK",): 1}
+	rules[Nonterminal("NOUN")][("UNK",)] = 1
 	return rules
 
 def normalize_and_transform_rules(rules):
@@ -117,6 +117,7 @@ def extract_brackets(tree):
 	return brackets
 
 def calculate_metric_of_sentence(candidate_tree, gold_tree):
+	global num_of_no_trees
 	if candidate_tree is None:
 		num_of_no_trees+=1
 		return [0.0, 0.0, 0.0, 0.0]
@@ -133,7 +134,6 @@ def calculate_metric_of_sentence(candidate_tree, gold_tree):
 	tagging_accuracy = calculate_tagging_accuracy(candidate_tree, gold_tree)
 
 	metric = [precision, recall, f1, tagging_accuracy]
-	print metric
 	return metric
 
 def calculate_parser_metrics(list_of_sentence_metrics):
@@ -165,10 +165,6 @@ def cky(words, pcfg):
 		if tup in keys:
 			for a in pcfg[tup].keys():
 				score[i][i+1][a] = pcfg[tup][a]
-
-		#elif re.match('^\*.*\*|0|^\*.*-\d+', w):
-		#	a = Nonterminal('X')
-		#	score[i][i+1][a] = pcfg[tup][a]
 		else:
 			tup = ("UNK",)
 			for a in pcfg[tup].keys():
@@ -257,21 +253,13 @@ def main():
 
 	list_of_sentence_metrics = []
 
-	ii = 1
 	for gold_tree in test_set:
-		print ii
-		print ""
-		ii+=1
 		words = gold_tree.leaves()
-		print gold_tree
-		print ""
 		candidate_tree = cky(words, pcfg)
-		print candidate_tree
-		print ""
 		list_of_sentence_metrics.append(calculate_metric_of_sentence(candidate_tree, gold_tree))
 	print_metrics(calculate_parser_metrics(list_of_sentence_metrics))
 	print "Total of sentences: " + str(len(test_set))
 	print "Sentences not parsed: " +str(num_of_no_trees)
-	print "Time spent: " + (time.time()-start_time)
+	print "Time spent: " + str(time.time()-start_time)
 
 main()
